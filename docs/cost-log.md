@@ -4,6 +4,7 @@ Account `$ACCOUNT_ID`. Baseline before these labs: **$0.00/month** — andruxa.d
 
 | Date | Session | Resources | Est. cost | Torn down | Bill verified |
 |---|---|---|---|---|---|
+| 2026-08-05 | S1 EC2 + SG/NACL | 3x t3.micro (~90 min), custom VPC, 2 SGs, IGW, no NAT | **~$0.13** | ✅ same day | ☐ check 2026-08-06 |
 | 2026-08-05 | S2 Event-driven orders | DynamoDB on-demand, 4 Lambdas, HTTP API, 4 SQS queues, EventBridge Pipe, 2 SNS topics, 1 alarm | **< $0.01** | ✅ same day | ☐ check 2026-08-06 |
 
 ## S2 detail

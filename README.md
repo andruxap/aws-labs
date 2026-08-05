@@ -6,7 +6,7 @@ Sequencing and cost analysis: `resume_website/docs/aws-projects-twl/00-merged-tr
 
 | # | Project | Services | Cost | Status |
 |---|---|---|---|---|
-| S1 | EC2 web server + SG/NACL challenge | EC2, VPC | $0.13 | planned |
+| **S1** | **[EC2 web server + SG/NACL challenge](s1-ec2-and-sgnacl/)** | EC2, VPC, Security Groups, NACLs, SSM | **$0.13** | ✅ built, tested, torn down |
 | **S2** | **[Event-driven order processing](s2-event-driven-orders/)** | API Gateway, Lambda, DynamoDB Streams, SQS, EventBridge Pipes, CloudWatch, SNS | **<$0.01** | ✅ built, tested, torn down |
 | S3 | ALB advanced request routing | EC2, ALB, S3, IAM, Route 53 | $0.26 | planned |
 | S4 | Blue/green + rolling deployments | ASG, Launch Templates, ALB | $0.51 | planned |

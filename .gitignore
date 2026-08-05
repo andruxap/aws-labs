@@ -8,3 +8,6 @@ build/
 *.tfvars
 node_modules/
 .DS_Store
+.env.b
+.env.*
+!.env.example
