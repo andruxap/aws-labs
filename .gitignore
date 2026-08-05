@@ -1,0 +1,10 @@
+.env
+.env.generated
+build/
+*.zip
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+node_modules/
+.DS_Store
