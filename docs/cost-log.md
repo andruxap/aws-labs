@@ -1,6 +1,21 @@
 # Cost log
 
-Account `$ACCOUNT_ID`. Baseline before these labs: **$0.00/month** — andruxa.dev runs inside Always Free allowances, and small credits (~$0.55/mo) absorb the rest. The 12-month free tier on this account has **expired**: only `Always Free` types remain, so EC2/RDS/ELB/DMS hours bill at full on-demand rate in every project after S2.
+Account `$ACCOUNT_ID`. Baseline before these labs: **$0.00/month** — andruxa.dev runs inside Always Free allowances, and credits absorb the rest.
+
+## Credits — checked 2026-08-05
+
+**$158.03 remaining, $1.97 used.** The whole ten-project track is ~$5.30, so it is comfortably covered.
+
+| Credit | Amount | Issued |
+|---|---|---|
+| AWS Free Tier | $100.00 | 2026-01-09 |
+| Explore AWS: cost budget with AWS Budgets | $20.00 | 2026-01-19 |
+| Explore AWS: launch an instance using EC2 | $20.00 | 2026-02-17 |
+| Explore AWS: create a web app using AWS Lambda | $20.00 | 2026-06-17 |
+
+This account is on the post-2025 **credit-based free plan**, not the old 12-month allowances — which is why `aws freetier get-free-tier-usage` returns only `Always Free` types. There are no free EC2/RDS/ELB hours; there is a credit pool instead. Those services bill at full on-demand rate and draw the pool down.
+
+**Credits expire, and unused credits are worth nothing.** Check the expiration column before deciding to skip a project on cost grounds — the expensive ones (S9's Global Accelerator, S7's RDS+DMS) are the best use of a balance with a deadline.
 
 | Date | Session | Resources | Est. cost | Torn down | Bill verified |
 |---|---|---|---|---|---|
