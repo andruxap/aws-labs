@@ -9,6 +9,7 @@ Plan and sequencing live in `resume_website/docs/aws-projects-twl/00-merged-trac
 
 - **Never work on `main`.** Every change happens on `develop` or a branch cut from it. `main` is only ever updated by merging `develop` into it, and only when asked. Check `git rev-parse --abbrev-ref HEAD` before the first edit of a session.
 - **Never leave AWS resources running past the session.** Every project has a `scripts/teardown.sh` and it runs the same day the project is built. A forgotten ALB is $16/month; a forgotten Global Accelerator is $18/month.
+- **Spend credits, never the credit card.** $158.03 of credits as of 2026-08-05; the whole track is ~$5.30. A Budget Action freezes creation of hourly-billed resources at $5 of post-credit spend — see [docs/spending-guardrail.md](docs/spending-guardrail.md). AWS has **no true hard cap**, so the automation is a backstop, not permission to be careless. Never start a project there isn't time to finish and tear down.
 - **Never commit AWS account IDs, API endpoint URLs, ARNs, or credentials.** Account-specific values come from `aws sts get-caller-identity` at runtime or from an untracked `.env`. Scripts must be safe to publish.
 - **No `*FullAccess` IAM policies.** The courses use them for convenience; this repo writes scoped policies. It's the difference between a lab and a portfolio piece.
 - **One region unless the project is explicitly multi-region:** `us-east-1`, with `us-west-2` as the only secondary. Mixing regions inside a project is the #1 cause of "the trigger just doesn't work."
