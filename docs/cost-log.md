@@ -19,6 +19,7 @@ This account is on the post-2025 **credit-based free plan**, not the old 12-mont
 
 | Date | Session | Resources | Est. cost | Torn down | Bill verified |
 |---|---|---|---|---|---|
+| 2026-08-05 | S4 Blue/green | 1 ALB (~2h), 4x t3.micro across 2 ASGs, 2 target groups, launch template | **~$0.20** | ✅ same day | ☐ check 2026-08-06 |
 | 2026-08-05 | S3 ALB routing | 1 ALB (~2h), 2x t3.micro, 2 target groups, S3 bucket, 3 Route 53 records | **~$0.14** | ✅ same day | ☐ check 2026-08-06 |
 | 2026-08-05 | S1 EC2 + SG/NACL | 3x t3.micro (~90 min), custom VPC, 2 SGs, IGW, no NAT | **~$0.13** | ✅ same day | ☐ check 2026-08-06 |
 | 2026-08-05 | S2 Event-driven orders | DynamoDB on-demand, 4 Lambdas, HTTP API, 4 SQS queues, EventBridge Pipe, 2 SNS topics, 1 alarm | **< $0.01** | ✅ same day | ☐ check 2026-08-06 |
