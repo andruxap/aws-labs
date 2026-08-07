@@ -12,7 +12,7 @@ Sequencing and cost analysis: `resume_website/docs/aws-projects-twl/00-merged-tr
 | **S4** | **[Blue/green + rolling deployments](s4-blue-green/)** | ASG, Launch Templates, Instance Refresh, ALB | **$0.20** | ✅ built, tested, torn down |
 | **S5** | **[Broken web app challenge](s5-broken-web-app/)** | CloudFormation, ALB, ASG, VPC routing, Security Groups | **$0.10** | ✅ 4/4 faults found, fixed, deleted |
 | **S6** | **[Multi-VPC PrivateLink](s6-privatelink/)** | VPC x3, NLB, Endpoint Service, Interface + Gateway Endpoints | **$0.23** | ✅ built, 7/7 assertions, torn down |
-| S7 | On-prem migration | EC2, RDS, DMS | $0.36 | planned |
+| **S7** | **[On-prem migration (DMS)](s7-onprem-migration/)** | EC2, RDS MySQL, AWS DMS, SSM | **$0.15** | ✅ migrated, cut over, torn down |
 | S8 | Serverless cross-region DR | DynamoDB Global Tables, Lambda, API GW | $0.05 | planned |
 | S9 | Global Accelerator failover | Global Accelerator, ALB ×2 | $1.48 | planned |
 
