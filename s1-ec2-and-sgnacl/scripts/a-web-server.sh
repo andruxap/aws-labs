@@ -10,6 +10,7 @@ export MSYS_NO_PATHCONV=1
 
 REGION="${AWS_REGION:-us-east-1}"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+BUILD="$HERE/build"; mkdir -p "$BUILD"
 NAME="Custom-Apache-Web-Server"
 SG="lab-s1a-web-sg"
 ROLE="lab-s1-ssm-role"
@@ -61,8 +62,11 @@ PUBLIC_IP="$(aws ec2 describe-instances --instance-ids "$IID" --region "$REGION"
 
 say "waiting for Apache on http://$PUBLIC_IP"
 for i in $(seq 1 30); do
-  # -w needs the newline, and tr strips it: without both, the codes concatenate
-  code="$(curl -s -o /dev/null -w '%{http_code}\n' --max-time 5 "http://$PUBLIC_IP" 2>/dev/null | tr -d '[:space:]' || echo 000)"
+  # MSYS_NO_PATHCONV=1 stops /dev/null resolving, so curl fails writing the body
+  # and exits non-zero even on a 200. Under `set -o pipefail` the `|| echo 000`
+  # then fired and the output read "200000". Discard the body to a real file.
+  code="$(curl -s -o "$BUILD/.body" -w '%{http_code}' --max-time 5 "http://$PUBLIC_IP" 2>/dev/null)"
+  code="${code:-000}"
   echo "    t=$((i*10))s HTTP $code"
   [ "$code" = "200" ] && break
   sleep 10

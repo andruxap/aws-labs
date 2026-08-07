@@ -21,7 +21,20 @@ BUILD="$HERE/build"; mkdir -p "$BUILD"
 ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
 w() { cygpath -m "$1"; }
 say() { echo ""; echo "==> $*"; }
-retry() { local n=0 max="$1"; shift; until "$@" >/dev/null 2>&1; do n=$((n+1)); [ "$n" -ge "$max" ] && { "$@"; return 1; }; sleep 5; done; }
+# Retry a command, PRESERVING its stdout. The original version piped every
+# attempt to /dev/null, so `x="$(retry 12 aws ec2 run-instances ...)"` came back
+# empty while the instance really had launched — a silent duplicate-resource
+# trap. Capture the output and replay it instead.
+retry() {
+  local n=0 max="$1"; shift
+  local out
+  while :; do
+    if out="$("$@" 2>/dev/null)"; then printf '%s' "$out"; return 0; fi
+    n=$((n+1))
+    if [ "$n" -ge "$max" ]; then "$@"; return 1; fi   # last try: let errors show
+    sleep 5
+  done
+}
 
 EVENTS_TOPIC="order-events"
 PIPE_QUEUE="pipe-source-queue"

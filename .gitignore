@@ -11,3 +11,4 @@ node_modules/
 .env.b
 .env.*
 !.env.example
+.body

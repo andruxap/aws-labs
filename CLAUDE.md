@@ -26,3 +26,11 @@ Plan and sequencing live in `resume_website/docs/aws-projects-twl/00-merged-trac
 - Windows 11, Git Bash. **Prefix AWS CLI commands that take leading-slash arguments with `MSYS_NO_PATHCONV=1`** — MSYS rewrites `/aws/lambda/...` into a Windows path and the call fails.
 - No `zip` binary. Use `powershell -NoProfile -Command "Compress-Archive ..."` for Lambda bundles.
 - Node 20, AWS CLI v2, default region `us-east-1`.
+
+### Bugs that have bitten more than once — do not reintroduce
+
+1. **`MSYS_NO_PATHCONV=1` + `curl -o /dev/null`.** With path conversion off, `/dev/null` does not resolve, so curl fails writing the body and exits non-zero *even on a 200*. Under `set -o pipefail` any `|| echo 000` fallback then fires and the output reads `200000`. Write the body to a real file (`-o "$BUILD/.body"`) instead. **Only applies on the workstation** — the same flag inside an instance (via `ssm send-command`) is running real Linux, where `/dev/null` is fine.
+2. **`file://` arguments need Windows paths.** The AWS CLI is a native Windows binary, so `file:///c/Users/...` fails. Convert with `cygpath -m` — every script defines `w() { cygpath -m "$1"; }` for this. Same for `aws s3 sync` source paths.
+3. **A `retry` helper must not swallow stdout.** The original piped every attempt to `/dev/null`, so `id="$(retry 12 aws ec2 run-instances ...)"` returned empty *while the instance had actually launched* — a silent duplicate-resource trap that cost two orphaned instances in S3. The current helper captures and replays stdout.
+4. **Never `|| continue` past a delete failure in a teardown.** Target groups return `ResourceInUse` for a while after their ALB is deleted; S3's first teardown skipped silently and left both behind. Retry in a loop, and print a loud warning if it gives up. A teardown that quietly half-works is worse than one that fails.
+5. **Always end a teardown with a resource count**, including `available` EBS volumes and `stopped` instances. Those survive most teardowns and keep billing.
