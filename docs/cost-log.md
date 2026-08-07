@@ -19,6 +19,7 @@ This account is on the post-2025 **credit-based free plan**, not the old 12-mont
 
 | Date | Session | Resources | Est. cost | Torn down | Bill verified |
 |---|---|---|---|---|---|
+| 2026-08-07 | S6 PrivateLink | 3 VPCs, 1 NLB (~2h), 5 interface endpoints, 1 S3 gateway endpoint (free), 3x t3.micro | **~$0.23** | ✅ same day | ☐ check 2026-08-08 |
 | 2026-08-05 | S5 Broken web app | CloudFormation stack: 1 ALB (~1h), 2x t3.micro, ASG, VPC | **~$0.10** | ✅ same day | ☐ check 2026-08-06 |
 | 2026-08-05 | S4 Blue/green | 1 ALB (~2h), 4x t3.micro across 2 ASGs, 2 target groups, launch template | **~$0.20** | ✅ same day | ☐ check 2026-08-06 |
 | 2026-08-05 | S3 ALB routing | 1 ALB (~2h), 2x t3.micro, 2 target groups, S3 bucket, 3 Route 53 records | **~$0.14** | ✅ same day | ☐ check 2026-08-06 |
