@@ -10,7 +10,7 @@ Sequencing and cost analysis: `resume_website/docs/aws-projects-twl/00-merged-tr
 | **S2** | **[Event-driven order processing](s2-event-driven-orders/)** | API Gateway, Lambda, DynamoDB Streams, SQS, EventBridge Pipes, CloudWatch, SNS | **<$0.01** | ✅ built, tested, torn down |
 | **S3** | **[ALB advanced request routing](s3-alb-routing/)** | EC2, ALB, Target Groups, S3, IAM, Route 53 | **$0.14** | ✅ built, tested, torn down |
 | **S4** | **[Blue/green + rolling deployments](s4-blue-green/)** | ASG, Launch Templates, Instance Refresh, ALB | **$0.20** | ✅ built, tested, torn down |
-| S5 | Broken web app challenge | CloudFormation, EC2, ALB | $0.19 | planned |
+| **S5** | **[Broken web app challenge](s5-broken-web-app/)** | CloudFormation, ALB, ASG, VPC routing, Security Groups | **$0.10** | ✅ 4/4 faults found, fixed, deleted |
 | S6 | Multi-VPC PrivateLink | VPC, NLB, Endpoint Services | $0.57 | planned |
 | S7 | On-prem migration | EC2, RDS, DMS | $0.36 | planned |
 | S8 | Serverless cross-region DR | DynamoDB Global Tables, Lambda, API GW | $0.05 | planned |
