@@ -13,7 +13,7 @@ Sequencing and cost analysis: `resume_website/docs/aws-projects-twl/00-merged-tr
 | **S5** | **[Broken web app challenge](s5-broken-web-app/)** | CloudFormation, ALB, ASG, VPC routing, Security Groups | **$0.10** | ✅ 4/4 faults found, fixed, deleted |
 | **S6** | **[Multi-VPC PrivateLink](s6-privatelink/)** | VPC x3, NLB, Endpoint Service, Interface + Gateway Endpoints | **$0.23** | ✅ built, 7/7 assertions, torn down |
 | **S7** | **[On-prem migration (DMS)](s7-onprem-migration/)** | EC2, RDS MySQL, AWS DMS, SSM | **$0.15** | ✅ migrated, cut over, torn down |
-| S8 | Serverless cross-region DR | DynamoDB Global Tables, Lambda, API GW | $0.05 | planned |
+| **S8** | **[Serverless cross-region DR](s8-multiregion-dr/)** | DynamoDB Global Tables, Lambda, API GW, ACM, Route 53 failover | **$0.06** | ✅ 7/7 assertions, failover + failback, torn down |
 | S9 | Global Accelerator failover | Global Accelerator, ALB ×2 | $1.48 | planned |
 
 Each project folder holds a runnable `scripts/deploy.sh` and `scripts/teardown.sh`, the source, and a write-up covering what broke.
