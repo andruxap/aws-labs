@@ -90,7 +90,20 @@ aws lambda wait function-updated --function-name ProcessOrderFunction --region "
 
 say "Recreate the Pipe against $PIPE_QUEUE (a pipe's source is immutable)"
 if aws pipes describe-pipe --name HighValueOrderPipe --region "$REGION" >/dev/null 2>&1; then
+  # Pipe state changes are async. Calling stop/delete while it is still
+  # CREATING or UPDATING fails with ConflictException, so wait for a settled
+  # state first — the same fix teardown.sh already carries.
+  settle() {
+    for _ in $(seq 1 24); do
+      s="$(aws pipes describe-pipe --name HighValueOrderPipe --region "$REGION" \
+        --query CurrentState --output text 2>/dev/null)" || return 0
+      case "$s" in RUNNING|STOPPED|CREATE_FAILED|UPDATE_FAILED|START_FAILED|STOP_FAILED) return 0;; esac
+      sleep 5
+    done
+  }
+  settle
   aws pipes stop-pipe --name HighValueOrderPipe --region "$REGION" >/dev/null 2>&1 || true
+  settle
   aws pipes delete-pipe --name HighValueOrderPipe --region "$REGION" >/dev/null
   until ! aws pipes describe-pipe --name HighValueOrderPipe --region "$REGION" >/dev/null 2>&1; do sleep 5; done
 fi

@@ -65,12 +65,23 @@ if ! aws dynamodb describe-table --table-name "$TABLE" --region "$REGION" >/dev/
     --key-schema AttributeName=orderId,KeyType=HASH \
     --billing-mode PAY_PER_REQUEST \
     --stream-specification StreamEnabled=true,StreamViewType=NEW_AND_OLD_IMAGES \
+    --tags Key=Lab,Value=s2 Key=Demo,Value=true \
     --region "$REGION" >/dev/null
   aws dynamodb wait table-exists --table-name "$TABLE" --region "$REGION"
 fi
 STREAM_ARN="$(aws dynamodb describe-table --table-name "$TABLE" --region "$REGION" \
   --query 'Table.LatestStreamArn' --output text)"
 echo "    stream: $STREAM_ARN"
+
+# TTL so a public demo table cannot grow forever. The handler stamps expiresAt
+# 24h ahead; DynamoDB deletes expired items for free, on its own schedule.
+if [ "$(aws dynamodb describe-time-to-live --table-name "$TABLE" --region "$REGION" \
+        --query 'TimeToLiveDescription.TimeToLiveStatus' --output text)" != "ENABLED" ]; then
+  aws dynamodb update-time-to-live --table-name "$TABLE" \
+    --time-to-live-specification "Enabled=true,AttributeName=expiresAt" \
+    --region "$REGION" >/dev/null 2>&1 || true
+fi
+echo "    TTL on expiresAt (24h) — the demo table self-cleans"
 
 # ----------------------------------------------------------------- 3. IAM ---
 say "IAM role $ROLE (least-privilege, not the course's *FullAccess)"
@@ -212,6 +223,17 @@ if ! aws apigatewayv2 get-stage --api-id "$API_ID" --stage-name prod --region "$
   aws apigatewayv2 create-stage --api-id "$API_ID" --stage-name prod \
     --auto-deploy --region "$REGION" >/dev/null
 fi
+
+# Throttling. This endpoint is public and unauthenticated, and it writes to
+# DynamoDB — a cost-amplification target. 5 req/s with a burst of 10 is far more
+# than a demo needs and far less than a bill worth noticing.
+#
+# Note this caps RATE, not TOTAL: 5 req/s sustained is still ~13M requests a
+# month. The tagged budget alarm is the backstop for that; see the deploy notes.
+aws apigatewayv2 update-stage --api-id "$API_ID" --stage-name prod \
+  --default-route-settings 'ThrottlingRateLimit=5,ThrottlingBurstLimit=10' \
+  --region "$REGION" >/dev/null
+echo "    throttled to 5 req/s (burst 10)"
 aws lambda add-permission --function-name CreateOrderFunction \
   --statement-id apigw-invoke --action lambda:InvokeFunction \
   --principal apigateway.amazonaws.com \

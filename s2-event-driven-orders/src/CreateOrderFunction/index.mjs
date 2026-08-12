@@ -43,6 +43,11 @@ export const handler = async (event) => {
           notes: { S: notes || "" },
           status: { S: "PENDING" },
           createdAt: { S: createdAt },
+          // TTL. This runs as a public demo, so every order self-deletes after
+          // 24h and the table cannot grow without bound. DynamoDB expects epoch
+          // SECONDS as a Number — passing milliseconds means "year 56000" and
+          // nothing is ever deleted, silently.
+          expiresAt: { N: String(Math.floor(Date.now() / 1000) + 86400) },
         },
       })
     );
