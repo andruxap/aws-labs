@@ -54,9 +54,14 @@ function timeline({ samples, width = 720, height = 96, title, desc, marks = [] }
     })
     .join('');
 
-  return `<svg viewBox="0 -12 ${width} ${height}" width="100%" role="img" aria-labelledby="t-${title} d-${title}" xmlns="http://www.w3.org/2000/svg">
-  <title id="t-${title}">${title}</title>
-  <desc id="d-${title}">${desc}</desc>
+  // Slugify: an id must not contain whitespace. Using the title raw produced
+  // `id="t-Blue-green cutover"`, which html-validate rejects (valid-id,
+  // attribute-allowed-values) — 12 errors caught by the site's own gate.
+  const id = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+  return `<svg viewBox="0 -12 ${width} ${height}" width="100%" role="img" aria-labelledby="t-${id} d-${id}" xmlns="http://www.w3.org/2000/svg">
+  <title id="t-${id}">${title}</title>
+  <desc id="d-${id}">${desc}</desc>
   <g>${bars}</g>
   ${markers}
 </svg>`;
