@@ -67,4 +67,36 @@ for i in $(seq 1 30); do
   sleep 20
 done
 
+# ------------------------------------------------------------- alarming ----
+# No canary needed. These health checks already probe both regions every 30s
+# and publish HealthCheckStatus — paying a second mechanism to ask the same
+# question would be waste. The metric is only emitted in us-east-1, whatever
+# region the endpoint lives in.
+#
+# Alarm on the PRIMARY only. The secondary going unhealthy while the primary
+# serves is not a user-visible outage, and alarming on it would page for a
+# condition nobody needs to act on at 2am.
+say "alarm on the primary health check"
+ALERT_EMAIL="${ALERT_EMAIL:?set ALERT_EMAIL to the address that should receive alerts}"
+TOPIC_ARN="$(aws sns create-topic --name lab-demo-alerts --region us-east-1 \
+  --query TopicArn --output text)"
+if ! aws sns list-subscriptions-by-topic --topic-arn "$TOPIC_ARN" --region us-east-1 \
+     --query "Subscriptions[?Endpoint=='$ALERT_EMAIL']" --output text | grep -q .; then
+  aws sns subscribe --topic-arn "$TOPIC_ARN" --protocol email \
+    --notification-endpoint "$ALERT_EMAIL" --region us-east-1 >/dev/null
+  echo "    subscription created — CONFIRM THE EMAIL or no alert will arrive"
+fi
+
+aws cloudwatch put-metric-alarm \
+  --alarm-name lab-s8-primary-unhealthy \
+  --alarm-description "api.lab.andruxa.dev primary is failing its health check. Its page claims status: live — see docs/runbook-live-demos.md in resume_website." \
+  --namespace AWS/Route53 --metric-name HealthCheckStatus \
+  --dimensions "Name=HealthCheckId,Value=$HC_P" \
+  --statistic Minimum --period 60 --evaluation-periods 2 \
+  --threshold 1 --comparison-operator LessThanThreshold \
+  --treat-missing-data breaching \
+  --alarm-actions "$TOPIC_ARN" --ok-actions "$TOPIC_ARN" \
+  --region us-east-1
+echo "    lab-s8-primary-unhealthy armed (2 x 60s below healthy)"
+
 say "https://$FQDN is live"

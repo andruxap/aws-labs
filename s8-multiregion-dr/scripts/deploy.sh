@@ -34,8 +34,14 @@ if ! aws dynamodb describe-table --table-name "$TABLE" --region "$PRIMARY" >/dev
     --key-schema AttributeName=ItemId,KeyType=HASH \
     --billing-mode PAY_PER_REQUEST \
     --stream-specification StreamEnabled=true,StreamViewType=NEW_AND_OLD_IMAGES \
-    --tags Key=Lab,Value=s8 --region "$PRIMARY" >/dev/null
+    --tags Key=Lab,Value=s8 Key=Demo,Value=true --region "$PRIMARY" >/dev/null
   aws dynamodb wait table-exists --table-name "$TABLE" --region "$PRIMARY"
+fi
+# TTL so a public demo table cannot grow forever. Set on the primary; a global
+# table propagates the setting, and expired-item deletions replicate like any
+# other write.
+if [ "$(aws dynamodb describe-time-to-live --table-name "$TABLE" --region "$PRIMARY"         --query 'TimeToLiveDescription.TimeToLiveStatus' --output text)" != "ENABLED" ]; then
+  aws dynamodb update-time-to-live --table-name "$TABLE"     --time-to-live-specification "Enabled=true,AttributeName=expiresAt"     --region "$PRIMARY" >/dev/null 2>&1 || true
 fi
 # A global table is the SAME table with replicas — not two tables that sync.
 if ! aws dynamodb describe-table --table-name "$TABLE" --region "$SECONDARY" >/dev/null 2>&1; then
@@ -119,7 +125,13 @@ build_region() {  # $1 region, $2 PRIMARY|SECONDARY
       --action lambda:InvokeFunction --principal apigateway.amazonaws.com \
       --source-arn "arn:aws:execute-api:$R:$ACCT:$api_id/*" --region "$R" >/dev/null 2>&1 || true
   fi
-  echo "    api $api_id"
+  # Throttle. This runs as a public demo: unauthenticated, and it writes to
+  # DynamoDB. --target quick-create builds a $default stage, so the limits go
+  # there. Same reasoning and the same numbers as S2.
+  aws apigatewayv2 update-stage --api-id "$api_id" --stage-name '$default' \
+    --default-route-settings 'ThrottlingRateLimit=5,ThrottlingBurstLimit=10' \
+    --region "$R" >/dev/null 2>&1 || true
+  echo "    api $api_id (throttled 5 req/s)"
 
   # Regional API Gateway custom domains need a cert in their OWN region —
   # this is not the CloudFront us-east-1 rule.

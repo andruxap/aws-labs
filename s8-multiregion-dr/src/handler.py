@@ -15,6 +15,7 @@ Corrections to the course code, all of them real defects:
 """
 import json
 import os
+import time
 from decimal import Decimal
 
 import boto3
@@ -72,6 +73,11 @@ def handler(event, context):
                     "ItemId": str(item_id),
                     "Data": str(data),
                     "WrittenInRegion": REGION,
+                    # TTL: this is a public demo, so writes self-delete after
+                    # 24h. Epoch SECONDS — milliseconds would mean year 56000
+                    # and nothing would ever be removed, silently. DynamoDB
+                    # replicates the deletion to the other region too.
+                    "expiresAt": int(time.time()) + 86400,
                 }
             )
             return reply(
