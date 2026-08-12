@@ -1,0 +1,6 @@
+# Copy to terraform.tfvars and fill in. Not committed — the zone id is
+# account-specific and a wrong value writes records into the wrong zone.
+#
+#   aws route53 list-hosted-zones --query "HostedZones[?Name=='example.com.'].Id"
+hosted_zone_id = "Z0000000000000000000"
+domain_name    = "api.lab.example.com"
