@@ -88,6 +88,8 @@ The automation is a backstop for the case where something is forgotten. These ar
 ## Quick status check
 
 ```bash
+ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+
 # what have I actually paid this month (after credits)?
 aws budgets describe-budgets --account-id $ACCOUNT_ID \
   --query "Budgets[?BudgetName=='real-money-hard-stop'].CalculatedSpend.ActualSpend.Amount" --output text

@@ -1,6 +1,6 @@
 # Cost log
 
-Account `$ACCOUNT_ID`. Baseline before these labs: **$0.00/month** — andruxa.dev runs inside Always Free allowances, and credits absorb the rest.
+Account: see `aws sts get-caller-identity`. Baseline before these labs: **$0.00/month** — andruxa.dev runs inside Always Free allowances, and credits absorb the rest.
 
 ## Credits — checked 2026-08-05
 

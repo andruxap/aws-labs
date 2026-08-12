@@ -6,7 +6,7 @@ set -euo pipefail
 export MSYS_NO_PATHCONV=1   # Git Bash rewrites /aws/lambda/... into a Windows path
 
 REGION="${AWS_REGION:-us-east-1}"
-ALERT_EMAIL="${ALERT_EMAIL:-$ALERT_EMAIL}"
+ALERT_EMAIL="${ALERT_EMAIL:?set ALERT_EMAIL to the address that should receive alerts}"
 RUNTIME="nodejs22.x"
 
 TABLE="Orders"

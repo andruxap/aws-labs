@@ -18,7 +18,7 @@ set -euo pipefail
 export MSYS_NO_PATHCONV=1
 
 REGION="us-east-1"
-EMAIL="${ALERT_EMAIL:-$ALERT_EMAIL}"
+EMAIL="${ALERT_EMAIL:?set ALERT_EMAIL to the address that should receive alerts}"
 ACCT="$(aws sts get-caller-identity --query Account --output text)"
 USER_NAME="$(aws sts get-caller-identity --query Arn --output text | sed 's|.*user/||')"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

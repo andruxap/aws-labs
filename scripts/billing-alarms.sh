@@ -8,7 +8,7 @@ set -euo pipefail
 export MSYS_NO_PATHCONV=1
 
 REGION="us-east-1"   # billing metrics live nowhere else
-EMAIL="${ALERT_EMAIL:-$ALERT_EMAIL}"
+EMAIL="${ALERT_EMAIL:?set ALERT_EMAIL to the address that should receive alerts}"
 TOPIC="billing-alerts"
 
 TOPIC_ARN="$(aws sns create-topic --name "$TOPIC" --region "$REGION" --query TopicArn --output text)"
