@@ -1,6 +1,6 @@
 # aws-labs
 
-Nine AWS architectures built in a real account, measured, and torn down the same day. Total spend: **$1.02**.
+Nine AWS architectures built in a real account, measured, and torn down the same day. Total spend: **$1.32**.
 
 The projects come from two courses. What's here isn't the courses' output — it's what happened when their instructions were followed exactly and then checked. **Three of the nine didn't work as taught.** Those are the interesting ones.
 
@@ -34,11 +34,21 @@ The projects come from two courses. What's here isn't the courses' output — it
 | [S6](s6-privatelink/) | Multi-VPC PrivateLink | VPC ×3, NLB, Endpoint Service, Interface + Gateway Endpoints | $0.23 | ✅ 7/7 assertions |
 | [S7](s7-onprem-migration/) | On-prem → RDS migration | EC2, RDS MySQL, DMS, SSM | $0.15 | ✅ cutover proven |
 | [S8](s8-multiregion-dr/) | Serverless cross-region DR | DynamoDB Global Tables, Lambda, API GW, Route 53 failover | $0.06 | ✅ failover + failback · **+ Terraform** |
-| S9 | Global Accelerator failover | Global Accelerator, ALB ×2 | ~$1.48 | ⏸ deferred — see below |
+| [S9](s9-global-accelerator/) | Global Accelerator failover | Global Accelerator, ALB ×2, VPC ×2 | $0.30 | ✅ 28s failover, 22s failback, measured |
 
 Every project folder has `scripts/deploy.sh`, `scripts/teardown.sh`, and a write-up with a **What broke** section. That section is the point; it's the part of a tutorial project nobody else can copy.
 
-**S9 is deferred deliberately.** It's the only lab whose recurring cost is meaningful — Global Accelerator bills a flat ~$18/month whether or not anyone uses it, and it's invisible in every per-region console view. The comparison it would complete (anycast failover vs the DNS failover measured in S8 at 60–80 s) is documented in [S8's write-up](s8-multiregion-dr/) instead.
+**S9 was built last on purpose.** Global Accelerator bills a flat ~$18/month whether or not anyone uses it, and it appears in *no* per-region console view — the highest hourly cost of the nine and the easiest to leave running by accident. Its teardown script was written before the failover test was run.
+
+**Three ways to survive a region failure, all measured.** Running S4, S8 and S9 was for this:
+
+| | Mechanism | Failover | Errors during | Data |
+|---|---|---|---|---|
+| [S4](s4-blue-green/) | listener swap, one region | ~40 s | **0** — target drained first | shared |
+| [S8](s8-multiregion-dr/) | Route 53 DNS failover | **60–80 s** | yes, the whole window | **replicated** |
+| [S9](s9-global-accelerator/) | anycast withdrawal | **28 s** | yes, ~24 s of it | none |
+
+Anycast is ~2.5× faster because it removes the DNS-caching penalty entirely — the client never re-resolves, the same two static IPs stay valid, and AWS changes what they route to internally. But **neither prevents the outage.** Both have a detection floor of `interval × threshold`, and no configuration gets you below the time it takes to notice. Any RTO claim that ignores the detection window is wrong.
 
 ---
 
@@ -60,7 +70,7 @@ terraform apply -var active_environment=green
 
 ## Cost discipline
 
-The interesting constraint wasn't money, it was forgetting. Nine architectures for $1.02 required a rule and a backstop.
+The interesting constraint wasn't money, it was forgetting. Nine architectures for $1.32 required a rule and a backstop.
 
 **The rule:** every project is torn down the same day it's built, every teardown script ends by *counting* what remains, and the bill is checked the next morning. Tracked in [docs/cost-log.md](docs/cost-log.md).
 

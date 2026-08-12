@@ -101,6 +101,12 @@ A planned change deregisters the target and lets connections finish. An out-of-b
 
 **Regional API Gateway needs its certificate in its own region** — not the us-east-1 rule that applies to CloudFront.
 
+**Anycast is faster than DNS failover, and neither prevents the outage.** Measured: DNS 60–80 s, anycast 28 s. Anycast removes the resolver-caching penalty entirely — the client never re-resolves, the same static IPs stay valid, and AWS changes what they route to internally. What it cannot do is detect a failure faster than it checks. Both have a floor of `interval × threshold`, and ~34% of requests failed during S9's 28 s window. Zero-error failover isn't a failover configuration; it needs both regions serving simultaneously. ([S9](../s9-global-accelerator/))
+
+**Static anycast IPs are a feature independent of failover speed.** Two addresses that never change in any region are what let a partner's firewall allowlist or an IoT fleet with baked-in addresses survive a region migration. DNS failover cannot offer this at all.
+
+**Global Accelerator must be disabled before it can be deleted**, and disabling isn't instant. A teardown that calls delete immediately fails — and if it fails quietly you keep paying ~$18/month for something you believe is gone. Poll for the disabled state, retry the delete, then re-check and shout.
+
 ---
 
 ## Terraform
