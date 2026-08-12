@@ -1,36 +1,99 @@
 # aws-labs
 
-Hands-on AWS projects, built and torn down in a real account. Console and CLI, then Terraform where the resource graph is worth learning.
+Nine AWS architectures built in a real account, measured, and torn down the same day. Total spend: **$1.02**.
 
-Sequencing and cost analysis: `resume_website/docs/aws-projects-twl/00-merged-track.md`.
+The projects come from two courses. What's here isn't the courses' output — it's what happened when their instructions were followed exactly and then checked. **Three of the nine didn't work as taught.** Those are the interesting ones.
+
+---
+
+## What was found
+
+**The event-driven course architecture is broken, not merely imperfect.** [S2](s2-event-driven-orders/) puts an EventBridge Pipe and a worker Lambda on the same SQS queue. Both are pollers, and a Pipe *deletes* the messages its filter rejects — so the worker starves. Normal orders never completed and failed orders never reached the dead-letter queue. Isolated by stopping the Pipe and changing nothing else, then fixed with SNS fan-out so both consumers get their own copy.
+
+**"Instant rollback" isn't instant.** [S4](s4-blue-green/) measured a blue/green cutover: 62 of 62 requests served `200`, zero lost — but **44 requests were still answered by the old environment after the switch was issued**. A listener change propagates over ~40 s. What's instant is *issuing* the rollback, which matters when you're rolling back because production is broken.
+
+**Only unplanned changes lose requests.** Same fleet, three scenarios: planned cutover **0%** loss, rolling refresh **0%**, abrupt instance termination **~4%** (19× HTTP 502). The difference is deregistration — a planned change drains the target first; `terminate-instances` doesn't, so the load balancer keeps routing to a dead host until two health checks fail.
+
+**A private instance can't bootstrap itself.** [S6](s6-privatelink/)'s provider sits in a private subnet with no NAT and no internet gateway — by design. It also couldn't `dnf install httpd`, because package repositories are on the internet. The architecture that makes the lab's point prevents the lab from building. Fixed with a free S3 gateway endpoint.
+
+**DMS migrates data, not databases.** [S7](s7-onprem-migration/) moved every row and zero users, grants, or stored procedures. The application only worked after the credentials were recreated by hand. Proven by killing the source database after cutover.
+
+**NACLs are stateless, and it's observable.** [S1](s1-ec2-and-sgnacl/) denied *outbound* traffic to one IP while leaving inbound wide open. Apache logged `"GET / HTTP/1.1" 200 55` while the client hung and timed out. The server answered; the reply was dropped on the way out. An identical rule in a security group would have done nothing.
+
+---
+
+## The projects
 
 | # | Project | Services | Cost | Status |
 |---|---|---|---|---|
-| **S1** | **[EC2 web server + SG/NACL challenge](s1-ec2-and-sgnacl/)** | EC2, VPC, Security Groups, NACLs, SSM | **$0.13** | ✅ built, tested, torn down |
-| **S2** | **[Event-driven order processing](s2-event-driven-orders/)** | API Gateway, Lambda, DynamoDB Streams, SQS, EventBridge Pipes, CloudWatch, SNS | **<$0.01** | ✅ built, tested, torn down |
-| **S3** | **[ALB advanced request routing](s3-alb-routing/)** | EC2, ALB, Target Groups, S3, IAM, Route 53 | **$0.14** | ✅ built, tested, torn down |
-| **S4** | **[Blue/green + rolling deployments](s4-blue-green/)** | ASG, Launch Templates, Instance Refresh, ALB | **$0.20** | ✅ built, tested, torn down |
-| **S5** | **[Broken web app challenge](s5-broken-web-app/)** | CloudFormation, ALB, ASG, VPC routing, Security Groups | **$0.10** | ✅ 4/4 faults found, fixed, deleted |
-| **S6** | **[Multi-VPC PrivateLink](s6-privatelink/)** | VPC x3, NLB, Endpoint Service, Interface + Gateway Endpoints | **$0.23** | ✅ built, 7/7 assertions, torn down |
-| **S7** | **[On-prem migration (DMS)](s7-onprem-migration/)** | EC2, RDS MySQL, AWS DMS, SSM | **$0.15** | ✅ migrated, cut over, torn down |
-| **S8** | **[Serverless cross-region DR](s8-multiregion-dr/)** | DynamoDB Global Tables, Lambda, API GW, ACM, Route 53 failover | **$0.06** | ✅ 7/7 assertions, failover + failback, torn down |
-| S9 | Global Accelerator failover | Global Accelerator, ALB ×2 | $1.48 | planned |
+| [S1](s1-ec2-and-sgnacl/) | EC2 web server + SG/NACL challenge | EC2, VPC, Security Groups, NACLs, SSM | $0.13 | ✅ 10-test matrix, 5 phases |
+| [S2](s2-event-driven-orders/) | Event-driven order processing | API Gateway, Lambda, DynamoDB Streams, SQS, EventBridge Pipes, SNS | <$0.01 | ✅ race diagnosed + fixed |
+| [S3](s3-alb-routing/) | ALB advanced request routing | EC2, ALB, Target Groups, S3, IAM, Route 53 | $0.14 | ✅ path- then host-based |
+| [S4](s4-blue-green/) | Blue/green + rolling deployments | ASG, Launch Templates, Instance Refresh, ALB | $0.20 | ✅ 3 scenarios measured · **+ Terraform** |
+| [S5](s5-broken-web-app/) | Broken web app challenge | CloudFormation, ALB, ASG, VPC routing | $0.10 | ✅ 4/4 faults, 0 false positives |
+| [S6](s6-privatelink/) | Multi-VPC PrivateLink | VPC ×3, NLB, Endpoint Service, Interface + Gateway Endpoints | $0.23 | ✅ 7/7 assertions |
+| [S7](s7-onprem-migration/) | On-prem → RDS migration | EC2, RDS MySQL, DMS, SSM | $0.15 | ✅ cutover proven |
+| [S8](s8-multiregion-dr/) | Serverless cross-region DR | DynamoDB Global Tables, Lambda, API GW, Route 53 failover | $0.06 | ✅ failover + failback · **+ Terraform** |
+| S9 | Global Accelerator failover | Global Accelerator, ALB ×2 | ~$1.48 | ⏸ deferred — see below |
 
-Each project folder holds a runnable `scripts/deploy.sh` and `scripts/teardown.sh`, the source, and a write-up covering what broke.
+Every project folder has `scripts/deploy.sh`, `scripts/teardown.sh`, and a write-up with a **What broke** section. That section is the point; it's the part of a tutorial project nobody else can copy.
 
-## Ground rules
+**S9 is deferred deliberately.** It's the only lab whose recurring cost is meaningful — Global Accelerator bills a flat ~$18/month whether or not anyone uses it, and it's invisible in every per-region console view. The comparison it would complete (anycast failover vs the DNS failover measured in S8 at 60–80 s) is documented in [S8's write-up](s8-multiregion-dr/) instead.
 
-- **Never work on `main`.** Everything happens on `develop`.
-- **Teardown the same day.** `docs/cost-log.md` tracks what was created and when it was deleted; the bill is checked the next morning.
-- **No `*FullAccess` policies.** The courses use them; this repo writes scoped ones.
-- Cost guardrail: `scripts/billing-alarms.sh` sets CloudWatch billing alarms at $10 and $25, on top of the account's $5 AWS Budget.
+---
 
-## Setup
+## Infrastructure as code
+
+Two labs are also written as Terraform — **validated and planned, never applied**, so they cost nothing to keep:
+
+**[S4](s4-blue-green/terraform/)** — `Plan: 14 to add`. The cutover stops being a sequence of API calls and becomes one variable:
 
 ```bash
-aws sts get-caller-identity     # confirm the account
-bash scripts/billing-alarms.sh  # once
-cd s2-event-driven-orders && bash scripts/deploy.sh
+terraform apply -var active_environment=green
 ```
 
-Windows/Git Bash: the AWS CLI is a native Windows binary, so `file://` arguments need `C:/...` paths (`cygpath -m`), and commands taking leading-slash arguments need `MSYS_NO_PATHCONV=1`. Both are handled in the scripts.
+`var.active_environment` is read by exactly one resource, the listener. Blue/green stops being a procedure you execute correctly and becomes something the configuration guarantees.
+
+**[S8](s8-multiregion-dr/terraform/)** — `Plan: 20 to add`. Multi-region as provider aliases. The shape of those 20 resources *is* the architecture: **1** global table (DynamoDB owns replication), **3** IAM resources (global), **16** regional resources (8 pairs). One replicated data plane, one global identity plane, a compute plane built twice.
+
+---
+
+## Cost discipline
+
+The interesting constraint wasn't money, it was forgetting. Nine architectures for $1.02 required a rule and a backstop.
+
+**The rule:** every project is torn down the same day it's built, every teardown script ends by *counting* what remains, and the bill is checked the next morning. Tracked in [docs/cost-log.md](docs/cost-log.md).
+
+**The backstop:** [docs/spending-guardrail.md](docs/spending-guardrail.md). AWS has no hard spending cap — budgets alert, they don't stop. The closest real mechanism is an AWS Budget Action that attaches a deny policy automatically. Built with two properties that matter: it never blocks `Delete`/`Terminate` (a freeze that traps you with running resources makes the bill worse), and it never blocks `iam:*` (so you can lift it yourself).
+
+What forgetting would have cost, per month: Global Accelerator **$18**, an ALB or NLB **$16 each**, RDS **$15**, a DMS replication instance **$13**, an interface endpoint **$7**. The last one is the trap — [S6](s6-privatelink/) had five, and they appear in *no* EC2 console view.
+
+---
+
+## Layout
+
+```
+sN-project/
+  README.md          goal → architecture → what broke → what I learned → cost → teardown proof
+  scripts/
+    deploy.sh        idempotent, re-runnable
+    teardown.sh      dependency order, safe twice, ends with a resource count
+    test.sh          assertions, where the project has something to assert
+  terraform/         S4 and S8 only
+docs/
+  cost-log.md        what was created, when it was deleted, what it cost
+  spending-guardrail.md
+scripts/
+  spend-guardrail.sh, billing-alarms.sh
+```
+
+## Running any of it
+
+```bash
+cp .env.example .env && $EDITOR .env    # ALERT_EMAIL is required, not defaulted
+source .env
+cd sN-project && bash scripts/deploy.sh
+bash scripts/teardown.sh                # same day
+```
+
+Built on Windows with Git Bash, which contributes its own hazards — the AWS CLI is a native Windows binary, so `file://` arguments need `cygpath -m`, and `MSYS_NO_PATHCONV=1` breaks `curl -o /dev/null`. Both are documented in [CLAUDE.md](CLAUDE.md) alongside three bugs that recurred often enough to be worth writing down.
