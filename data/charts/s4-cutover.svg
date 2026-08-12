@@ -1,0 +1,7 @@
+<svg viewBox="0 -12 720 96" width="100%" role="img" aria-labelledby="t-Blue-green cutover d-Blue-green cutover" xmlns="http://www.w3.org/2000/svg">
+  <title id="t-Blue-green cutover">Blue-green cutover</title>
+  <desc id="d-Blue-green cutover">62 requests across a listener swap, all HTTP 200. Zero requests lost.</desc>
+  <g><rect x="0.00" y="0" width="720.40" height="56" fill="var(--status-green, #5ad17e)"/></g>
+  <line x1="46.45" y1="-6" x2="46.45" y2="62" stroke="var(--text, #eef1f4)" stroke-width="1.5" stroke-dasharray="3 3"/>
+      <text x="46.45" y="78" text-anchor="start" font-size="11" font-family="ui-monospace, monospace" fill="var(--text, #eef1f4)">switch issued</text>
+</svg>

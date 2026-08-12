@@ -1,0 +1,6 @@
+<svg viewBox="0 -12 720 96" width="100%" role="img" aria-labelledby="t-Rolling instance refresh d-Rolling instance refresh" xmlns="http://www.w3.org/2000/svg">
+  <title id="t-Rolling instance refresh">Rolling instance refresh</title>
+  <desc id="d-Rolling instance refresh">43 requests across a 430-second instance refresh, all HTTP 200. Both v1.0 and v1.1 served during the roll.</desc>
+  <g><rect x="0.00" y="0" width="720.40" height="56" fill="var(--status-green, #5ad17e)"/></g>
+  
+</svg>

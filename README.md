@@ -34,7 +34,7 @@ The projects come from two courses. What's here isn't the courses' output — it
 | [S6](s6-privatelink/) | Multi-VPC PrivateLink | VPC ×3, NLB, Endpoint Service, Interface + Gateway Endpoints | $0.23 | ✅ 7/7 assertions |
 | [S7](s7-onprem-migration/) | On-prem → RDS migration | EC2, RDS MySQL, DMS, SSM | $0.15 | ✅ cutover proven |
 | [S8](s8-multiregion-dr/) | Serverless cross-region DR | DynamoDB Global Tables, Lambda, API GW, Route 53 failover | $0.06 | ✅ failover + failback · **+ Terraform** |
-| [S9](s9-global-accelerator/) | Global Accelerator failover | Global Accelerator, ALB ×2, VPC ×2 | $0.30 | ✅ 28s failover, 22s failback, measured |
+| [S9](s9-global-accelerator/) | Global Accelerator failover | Global Accelerator, ALB ×2, VPC ×2 | $0.30 | ✅ 25s failover, 22s failback, measured |
 
 Every project folder has `scripts/deploy.sh`, `scripts/teardown.sh`, and a write-up with a **What broke** section. That section is the point; it's the part of a tutorial project nobody else can copy.
 
@@ -46,7 +46,7 @@ Every project folder has `scripts/deploy.sh`, `scripts/teardown.sh`, and a write
 |---|---|---|---|---|
 | [S4](s4-blue-green/) | listener swap, one region | ~40 s | **0** — target drained first | shared |
 | [S8](s8-multiregion-dr/) | Route 53 DNS failover | **60–80 s** | yes, the whole window | **replicated** |
-| [S9](s9-global-accelerator/) | anycast withdrawal | **28 s** | yes, ~24 s of it | none |
+| [S9](s9-global-accelerator/) | anycast withdrawal | **25 s** | yes, 26 s of it | none |
 
 Anycast is ~2.5× faster because it removes the DNS-caching penalty entirely — the client never re-resolves, the same two static IPs stay valid, and AWS changes what they route to internally. But **neither prevents the outage.** Both have a detection floor of `interval × threshold`, and no configuration gets you below the time it takes to notice. Any RTO claim that ignores the detection window is wrong.
 

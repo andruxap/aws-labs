@@ -40,22 +40,29 @@ The primary was broken by deregistering its only target, so the ALB had no healt
 requests           : 233
 HTTP 200           : 154
 failed (503)       :  79
-failover  (break    -> us-west-2 serving) : 28s
+failover  (break    -> us-west-2 serving) : 25s
 failback  (recover  -> us-east-1 serving) : 22s
 ```
 
-**Failover took 28 seconds and 34% of requests failed during it.**
+> The test script reported 28 s; recomputing from the raw samples in
+> [`data/s9-failover.log`](../data/s9-failover.log) gives **25 s**. The script
+> polled on a 5-second sleep, so its figure carried that granularity. The
+> smaller number is the accurate one and the log is committed so anyone can
+> check it.
+
+**Failover took 25 seconds and 34% of requests failed during it.**
 
 The transition, second by second:
 
 ```
 +0s .. +3s    200  us-east-1     ALB still draining, target already deregistered
 +4s           503                ALB has no healthy target
-+4s .. +28s   503                GA still routing here — its own check hasn't tripped yet
-+28s          200  us-west-2     endpoint withdrawn, traffic moved
++4s .. +25s   503                GA still routing here — its own check hasn't tripped yet
++25s          200  us-west-2     endpoint withdrawn, traffic moved
++30s          last 503           a 5s tail still reaching the withdrawn endpoint
 ```
 
-That ~24-second block of 503s is the important part, and it isn't a misconfiguration. Global Accelerator's health check was already at its tightest useful setting: 10-second interval, threshold 2. That's a **20-second detection floor** before it can possibly know the region is unhealthy, and during detection it keeps sending traffic to the broken region.
+That 26-second block of 503s (+4s to +30s) is the important part, and it isn't a misconfiguration. Global Accelerator's health check was already at its tightest useful setting: 10-second interval, threshold 2. That's a **20-second detection floor** before it can possibly know the region is unhealthy, and during detection it keeps sending traffic to the broken region.
 
 ---
 
@@ -67,9 +74,9 @@ This is what running S4, S8 and S9 was for.
 |---|---|---|---|---|---|
 | **[S4](../s4-blue-green/)** Blue/green | listener rule swap, one region | ~40 s to propagate | **0** — target drained first | shared | one ALB |
 | **[S8](../s8-multiregion-dr/)** DNS failover | Route 53 stops answering with the primary | **60–80 s** | yes, the whole window | **replicated** (Global Table) | ~$1/mo health checks |
-| **S9** Anycast | GA withdraws an unhealthy endpoint | **28 s** | yes, ~24 s of it | none — stateless | **~$18/mo fixed** |
+| **S9** Anycast | GA withdraws an unhealthy endpoint | **25 s** | yes, 26 s of it | none — stateless | **~$18/mo fixed** |
 
-**Anycast is roughly 2.5× faster than DNS, and neither prevents the outage.**
+**Anycast is roughly 2.5-3× faster than DNS, and neither prevents the outage.**
 
 The reason is that they fail for different parts of the same total. Both have a detection floor of `interval × threshold`:
 
@@ -98,7 +105,7 @@ If you need genuinely zero errors, failover isn't the tool — you need both reg
 
 **Deregistering a target is a clean, reversible way to break a region.** No instance is harmed, the failure is real from the load balancer's perspective, and recovery is one `register-targets` call — which is what made measuring failback as easy as failover.
 
-**Failback was faster than failover** (22 s vs 28 s), and it's worth knowing why: a target becoming healthy needs 2 passing checks at 10 s, while the failure path also had to wait for the ALB's own draining behaviour before it started returning 503.
+**Failback was faster than failover** (22 s vs 25 s), and it's worth knowing why: a target becoming healthy needs 2 passing checks at 10 s, while the failure path also had to wait for the ALB's own draining behaviour before it started returning 503.
 
 ---
 
