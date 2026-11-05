@@ -32,9 +32,17 @@ data "aws_ssm_parameter" "al2023" {
 # --------------------------------------------------------------------- IAM ---
 # SSM Session Manager instead of a key pair: no inbound SSH anywhere, and the
 # lab's test scripts can run commands through the AWS API.
+#
+# Under /workload/ with the BuilderBoundary ceiling: the daily Builder login can
+# only create roles that carry both (resume-website plan 020, step 12). The ARN
+# is built from the caller's account, never committed.
+data "aws_caller_identity" "current" {}
+
 resource "aws_iam_role" "ec2" {
-  name               = "${var.name}-ec2-role"
-  assume_role_policy = data.aws_iam_policy_document.ec2_assume.json
+  name                 = "${var.name}-ec2-role"
+  path                 = "/workload/"
+  permissions_boundary = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/boundary/BuilderBoundary"
+  assume_role_policy   = data.aws_iam_policy_document.ec2_assume.json
 }
 
 data "aws_iam_policy_document" "ec2_assume" {
@@ -54,6 +62,7 @@ resource "aws_iam_role_policy_attachment" "ssm" {
 
 resource "aws_iam_instance_profile" "ec2" {
   name = "${var.name}-ec2-role"
+  path = "/workload/"
   role = aws_iam_role.ec2.name
 }
 

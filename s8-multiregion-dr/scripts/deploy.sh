@@ -21,6 +21,7 @@ ROLE="lab-s8-lambda-role"
 FN="lab-s8-api"
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$HERE/../scripts/lib/workload-iam.sh"  # /workload/ path + BuilderBoundary (plan 020)
 BUILD="$HERE/build"; mkdir -p "$BUILD"
 ACCT="$(aws sts get-caller-identity --query Account --output text)"
 w() { cygpath -m "$1"; }
@@ -69,7 +70,7 @@ echo "    replicas: $(aws dynamodb describe-table --table-name "$TABLE" --region
 # ------------------------------------------------------------- 2. IAM -------
 say "IAM role $ROLE (four actions on one table, not DynamoDBFullAccess)"
 if ! aws iam get-role --role-name "$ROLE" >/dev/null 2>&1; then
-  aws iam create-role --role-name "$ROLE" --assume-role-policy-document \
+  aws iam create-role --role-name "$ROLE" --path "$WORKLOAD_PATH" --permissions-boundary "$(workload_boundary_arn)" --assume-role-policy-document \
     '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"lambda.amazonaws.com"},"Action":"sts:AssumeRole"}]}' >/dev/null
 fi
 aws iam attach-role-policy --role-name "$ROLE" \
@@ -82,7 +83,7 @@ cat > "$BUILD/policy.json" <<JSON
 JSON
 aws iam put-role-policy --role-name "$ROLE" --policy-name TableAccess \
   --policy-document "file://$(w "$BUILD/policy.json")"
-ROLE_ARN="arn:aws:iam::$ACCT:role/$ROLE"
+ROLE_ARN="$(role_arn "$ROLE")"
 echo "    ready"
 
 powershell -NoProfile -Command \

@@ -21,6 +21,7 @@ ALARM="order-processing-alarm"
 TOPIC="order-processing-alerts"
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$HERE/../scripts/lib/workload-iam.sh"  # /workload/ path + BuilderBoundary (plan 020)
 BUILD="$HERE/build"
 mkdir -p "$BUILD"
 ENV_OUT="$HERE/.env.generated"
@@ -86,7 +87,7 @@ echo "    TTL on expiresAt (24h) — the demo table self-cleans"
 # ----------------------------------------------------------------- 3. IAM ---
 say "IAM role $ROLE (least-privilege, not the course's *FullAccess)"
 if ! aws iam get-role --role-name "$ROLE" >/dev/null 2>&1; then
-  aws iam create-role --role-name "$ROLE" \
+  aws iam create-role --role-name "$ROLE" --path "$WORKLOAD_PATH" --permissions-boundary "$(workload_boundary_arn)" \
     --assume-role-policy-document "file://$(w "$HERE/policies/lambda-trust.json")" >/dev/null
 fi
 aws iam attach-role-policy --role-name "$ROLE" \
@@ -114,7 +115,7 @@ cat > "$BUILD/lambda-policy.json" <<JSON
 JSON
 aws iam put-role-policy --role-name "$ROLE" --policy-name OrderServiceAccess \
   --policy-document "file://$(w "$BUILD/lambda-policy.json")"
-ROLE_ARN="arn:aws:iam::$ACCOUNT_ID:role/$ROLE"
+ROLE_ARN="$(role_arn "$ROLE")"
 
 # ----------------------------------------------------------------- 4. SQS ---
 say "SQS queues"
@@ -246,7 +247,7 @@ echo "    $API_URL"
 say "EventBridge Pipe $PIPE"
 sed "s/ACCOUNT_ID/$ACCOUNT_ID/" "$HERE/policies/pipes-trust.json" > "$BUILD/pipes-trust.json"
 if ! aws iam get-role --role-name "$PIPE_ROLE" >/dev/null 2>&1; then
-  aws iam create-role --role-name "$PIPE_ROLE" \
+  aws iam create-role --role-name "$PIPE_ROLE" --path "$WORKLOAD_PATH" --permissions-boundary "$(workload_boundary_arn)" \
     --assume-role-policy-document "file://$(w "$BUILD/pipes-trust.json")" >/dev/null
 fi
 cat > "$BUILD/pipes-policy.json" <<JSON
@@ -273,7 +274,7 @@ JSON
 
 if ! aws pipes describe-pipe --name "$PIPE" --region "$REGION" >/dev/null 2>&1; then
   retry 12 aws pipes create-pipe --name "$PIPE" \
-    --role-arn "arn:aws:iam::$ACCOUNT_ID:role/$PIPE_ROLE" \
+    --role-arn "$(role_arn "$PIPE_ROLE")" \
     --source "$QUEUE_ARN" --target "$HV_ARN" \
     --source-parameters "file://$(w "$BUILD/pipe-source.json")" \
     --target-parameters "file://$(w "$BUILD/pipe-target.json")" \

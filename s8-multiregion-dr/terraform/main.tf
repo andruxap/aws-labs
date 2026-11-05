@@ -60,10 +60,14 @@ data "aws_iam_policy_document" "lambda_assume" {
   }
 }
 
+# Under /workload/ with the BuilderBoundary ceiling, so the daily Builder login
+# can create it (resume-website plan 020, step 12).
 resource "aws_iam_role" "lambda" {
-  provider           = aws.primary
-  name               = "${var.name}-lambda-role"
-  assume_role_policy = data.aws_iam_policy_document.lambda_assume.json
+  provider             = aws.primary
+  name                 = "${var.name}-lambda-role"
+  path                 = "/workload/"
+  permissions_boundary = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/boundary/BuilderBoundary"
+  assume_role_policy   = data.aws_iam_policy_document.lambda_assume.json
 }
 
 # Four actions on one table and its replica — not AmazonDynamoDBFullAccess,

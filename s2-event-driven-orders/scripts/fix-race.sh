@@ -17,6 +17,7 @@ export MSYS_NO_PATHCONV=1
 
 REGION="${AWS_REGION:-us-east-1}"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$HERE/../scripts/lib/workload-iam.sh"  # /workload/ path + BuilderBoundary (plan 020)
 BUILD="$HERE/build"; mkdir -p "$BUILD"
 ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
 w() { cygpath -m "$1"; }
@@ -121,7 +122,7 @@ aws iam put-role-policy --role-name HighValueOrderPipeRole --policy-name PipeSqs
   --policy-document "file://$(w "$BUILD/pipes-policy.json")"
 
 retry 12 aws pipes create-pipe --name HighValueOrderPipe \
-  --role-arn "arn:aws:iam::$ACCOUNT_ID:role/HighValueOrderPipeRole" \
+  --role-arn "$(role_arn HighValueOrderPipeRole)" \
   --source "$PIPE_ARN" --target "$HV_ARN" \
   --source-parameters "file://$(w "$BUILD/pipe-source.json")" \
   --target-parameters "file://$(w "$BUILD/pipe-target.json")" \

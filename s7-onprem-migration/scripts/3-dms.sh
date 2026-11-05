@@ -19,6 +19,14 @@ TASK="lab-s7-task"
 # created. The console creates it silently the first time you use DMS; the CLI
 # and IaC do not. The error when it is missing is misleading — it says the role
 # "is not configured properly" for a role that does not exist at all.
+#
+# The one lab role that can NOT live under /workload/ (resume-website plan
+# 020): DMS looks it up by exact name at the root path. The daily Builder login
+# can't create roles outside /workload/, so if it doesn't exist yet, create it
+# once with the admin wrapper, from PowerShell in this repo's root:
+#   ..\resume_website\scripts\aws-admin.ps1 "C:\Program Files\Git\bin\bash.exe" s7-onprem-migration/scripts/3-dms.sh
+# (Git Bash explicitly: plain `bash` on this laptop is the WSL launcher.) The
+# role persists across labs, so this is needed once.
 say "dms-vpc-role (prerequisite the console hides)"
 if ! aws iam get-role --role-name dms-vpc-role >/dev/null 2>&1; then
   aws iam create-role --role-name dms-vpc-role --assume-role-policy-document \

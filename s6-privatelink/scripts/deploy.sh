@@ -17,6 +17,7 @@ export MSYS_NO_PATHCONV=1
 
 REGION="${AWS_REGION:-us-east-1}"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$HERE/../scripts/lib/workload-iam.sh"  # /workload/ path + BuilderBoundary (plan 020)
 BUILD="$HERE/build"; mkdir -p "$BUILD"
 ACCT="$(aws sts get-caller-identity --query Account --output text)"
 AZ1="${REGION}a"; AZ2="${REGION}b"
@@ -89,12 +90,12 @@ say "account $ACCT / region $REGION"
 # ------------------------------------------------------------------- IAM -----
 say "SSM role $ROLE"
 if ! aws iam get-role --role-name "$ROLE" >/dev/null 2>&1; then
-  aws iam create-role --role-name "$ROLE" --assume-role-policy-document \
+  aws iam create-role --role-name "$ROLE" --path "$WORKLOAD_PATH" --permissions-boundary "$(workload_boundary_arn)" --assume-role-policy-document \
     '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"ec2.amazonaws.com"},"Action":"sts:AssumeRole"}]}' >/dev/null
 fi
 aws iam attach-role-policy --role-name "$ROLE" \
   --policy-arn arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
-aws iam create-instance-profile --instance-profile-name "$ROLE" >/dev/null 2>&1 || true
+aws iam create-instance-profile --instance-profile-name "$ROLE" --path "$WORKLOAD_PATH" >/dev/null 2>&1 || true
 aws iam add-role-to-instance-profile --instance-profile-name "$ROLE" --role-name "$ROLE" >/dev/null 2>&1 || true
 echo "    ready"
 

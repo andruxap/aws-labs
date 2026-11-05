@@ -14,6 +14,12 @@
 # Safe by construction: the freeze blocks CREATING billable resources but never
 # blocks deleting them, so teardown always works. It also does not touch iam:*,
 # so you can remove the freeze yourself. Root can always override.
+#
+# ADMIN-ONLY since resume-website plan 020: creating or running a budget action
+# is denied to the daily Builder login (a budget action executes as a role that
+# can attach any policy — admin by proxy). Run this through the admin wrapper.
+# The freeze target is the IAM user that ran it; after 020 step 9 that user has
+# no active key, so re-targeting the freeze is tracked as plan flag F2.
 set -euo pipefail
 export MSYS_NO_PATHCONV=1
 
