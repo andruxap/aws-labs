@@ -32,7 +32,10 @@ allowed() {
 fail=0
 report() { echo "  $1:$2: $3"; fail=1; }
 
-shell_files=$(git ls-files '*.sh')
+# This checker and the shared library quote the patterns in comments and
+# strings, so they are not scanned. Only tracked files are scanned: run the
+# check again after committing a new script, not just before.
+shell_files=$(git ls-files '*.sh' | grep -vx -e scripts/check-workload-iam.sh -e scripts/lib/workload-iam.sh)
 
 # create-role: the flags may continue on the next line, so join continuations.
 for f in $shell_files; do
