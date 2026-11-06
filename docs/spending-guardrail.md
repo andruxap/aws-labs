@@ -42,7 +42,12 @@ While credits are covering everything, this budget reads **$0.00**. The moment i
 
 ### Layer 3 — the hard stop
 
-At **$5 of post-credit spend in a month**, a Budget Action automatically attaches the IAM policy `LabSpendFreeze` to user `Andrey`. Status: `STANDBY`, `AUTOMATIC` (no approval step — it just fires).
+At **$5 of post-credit spend in a month**, a Budget Action automatically attaches the IAM policy `LabSpendFreeze` to the IAM role named in `FREEZE_ROLE`. Status: `STANDBY`, `AUTOMATIC` (no approval step — it just fires).
+
+**Since 2026-11-05 (resume-website plan 020, F2):**
+- Daily work is an IAM Identity Center sign-in. AWS doesn't let anything, Budgets included, attach a policy to an Identity Center role (`AWSReservedSSO_*`).
+- So the automatic freeze targets the CI apply role. The daily sign-in is frozen by hand when the budget email arrives: `scripts/builder-spend-freeze.ps1 On` in resume-website, through its admin wrapper.
+- Until that date the freeze could not have fired successfully on anything. The AWS managed policy `AWSBudgetsActionsWithAWSResourceControlAccess` has no `iam:Attach*`. The execution role now also has an inline policy that allows exactly one attach: `LabSpendFreeze` onto `FREEZE_ROLE`.
 
 **What the freeze blocks** — creation of everything that bills by the hour:
 
@@ -54,16 +59,19 @@ At **$5 of post-credit spend in a month**, a Budget Action automatically attache
 - **`iam:*`** — so you can lift the freeze yourself.
 - **Lambda, DynamoDB, S3, CloudFront, Route 53** — Always Free or negligible, and andruxa.dev depends on them.
 
-**It does not affect andruxa.dev.** The policy attaches to the IAM *user* `Andrey`. The site's CI deploys through OIDC *roles*, which are separate principals, and running infrastructure is untouched regardless. Production keeps working while you're frozen.
+**It does not affect andruxa.dev's deploys.** The policy attaches to the CI *apply* role, which only a manually dispatched workflow uses. The site deploys through the separate deploy role, and running infrastructure is untouched regardless. Production keeps working while you're frozen.
 
 **Root always overrides.** IAM policies don't apply to the account root user, so you can never lock yourself out.
 
 ### To lift the freeze
 
 ```bash
-aws iam detach-user-policy --user-name Andrey \
+aws iam detach-role-policy --role-name "$FREEZE_ROLE" \
   --policy-arn arn:aws:iam::$ACCOUNT_ID:policy/LabSpendFreeze
 ```
+
+If the daily sign-in was frozen by hand as well, unfreeze it with `scripts/builder-spend-freeze.ps1 Off`
+(resume-website, through the admin wrapper).
 
 ---
 
